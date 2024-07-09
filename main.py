@@ -45,6 +45,7 @@ for destination in sheet_data:
     # Slowing down requests to avoid rate limit
     time.sleep(2)
 
+#            DIRECT FLIGHTS              #
     # Whatsapp message
     if cheapest_flight.price != "N/A" and cheapest_flight.price < destination["lowestPrice"]:
         print(f"Lower price flight found to {destination['city']}!")
@@ -53,3 +54,16 @@ for destination in sheet_data:
                          f"from {cheapest_flight.origin_airport} to {cheapest_flight.destination_airport}, "
                          f"on {cheapest_flight.out_date} until {cheapest_flight.return_date}."
         )
+
+    #            INDIRECT FLIGHTS              #
+    if cheapest_flight.price == "N/A":
+        print(f"No direct flight to {destination['city']}. Looking for indirect flights...")
+        stopover_flights = flight_search.check_flights(
+            ORIGIN_CITY_IATA,
+            destination["iataCode"],
+            from_time=tomorrow,
+            to_time=six_month_from_today,
+            is_direct=False
+        )
+        cheapest_flight = find_cheapest_flight(stopover_flights)
+        print(f"Cheapest indirect flight price is: ₹{cheapest_flight.price}")

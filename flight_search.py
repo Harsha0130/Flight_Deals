@@ -53,7 +53,7 @@ class FlightSearch:
 
         return code
 
-    def check_flights(self, origin_city_code, destination_city_code, from_time, to_time):
+    def check_flights(self, origin_city_code, destination_city_code, from_time, to_time, is_direct=True):
         headers = {"Authorization": f"Bearer {self.token}"}
         query = {
             "originLocationCode": origin_city_code,
@@ -61,7 +61,7 @@ class FlightSearch:
             "departureDate": from_time.strftime("%Y-%m-%d"),
             "returnDate": to_time.strftime("%Y-%m-%d"),
             "adults": 1,
-            "nonStop": "true",
+            "nonStop": "true" if is_direct else "false",
             "currencyCode": "INR",
             "max": "10",
         }

@@ -27,7 +27,14 @@ if sheet_data[0]["iataCode"] == "":
     data_manager.destination_data = sheet_data
     data_manager.update_destination_code()
 
-# ==================== Search for Flights ====================
+# ==================== Retrieve your customer emails ====================
+
+customer_data = data_manager.get_customer_emails()
+# Verify the name of your email column in your sheet. Yours may be different from mine
+customer_email_list = [row["email"] for row in customer_data if "email" in row]
+# print(f"Your email list includes {customer_email_list}")
+
+# ==================== Search for Flights  -------DIRECT FLIGHTS-------- ====================
 
 tomorrow = datetime.now() + timedelta(days=1)
 six_month_from_today = datetime.now() + timedelta(days=(6 * 30))
@@ -45,15 +52,28 @@ for destination in sheet_data:
     # Slowing down requests to avoid rate limit
     time.sleep(2)
 
-#            DIRECT FLIGHTS              #
-    # Whatsapp message
+    # ==================== Send Notifications and Emails  ====================
+
     if cheapest_flight.price != "N/A" and cheapest_flight.price < destination["lowestPrice"]:
-        print(f"Lower price flight found to {destination['city']}!")
-        notification_manager.send_whatsapp(
-            message_body=f"Low price alert! Only ₹{cheapest_flight.price} to fly "
-                         f"from {cheapest_flight.origin_airport} to {cheapest_flight.destination_airport}, "
-                         f"on {cheapest_flight.out_date} until {cheapest_flight.return_date}."
-        )
+        # Customise the message depending on the number of stops
+        if cheapest_flight.stops == 0:
+            message = f"Low price alert! Only GBP {cheapest_flight.price} to fly direct "\
+                      f"from {cheapest_flight.origin_airport} to {cheapest_flight.destination_airport}, "\
+                      f"on {cheapest_flight.out_date} until {cheapest_flight.return_date}."
+        else:
+            message = f"Low price alert! Only GBP {cheapest_flight.price} to fly "\
+                      f"from {cheapest_flight.origin_airport} to {cheapest_flight.destination_airport}, "\
+                      f"with {cheapest_flight.stops} stop(s) "\
+                      f"departing on {cheapest_flight.out_date} and returning on {cheapest_flight.return_date}."
+
+        print(f"Check your email. Lower price flight found to {destination['city']}!")
+
+        # notification_manager.send_sms(message_body=message)
+        # SMS not working? Try whatsapp instead.
+        notification_manager.send_whatsapp(message_body=message)
+
+        # Send emails to everyone on the list
+        notification_manager.send_emails(email_list=customer_email_list, email_body=message)
 
     #            INDIRECT FLIGHTS              #
     if cheapest_flight.price == "N/A":
@@ -67,3 +87,4 @@ for destination in sheet_data:
         )
         cheapest_flight = find_cheapest_flight(stopover_flights)
         print(f"Cheapest indirect flight price is: ₹{cheapest_flight.price}")
+
